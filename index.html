@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DartAway - Jeremy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,15 +15,67 @@
         }
 
         body {
-            background: #0a0a1a;
+            background: linear-gradient(145deg, #050510 0%, #0a0a2e 50%, #050518 100%);
             color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             overflow: hidden;
             height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+        }
+
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            left: 0;
+            right: 0;
+            height: 120px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        body::before {
+            top: 0;
+            background: linear-gradient(to bottom, rgba(5, 5, 16, 0.8), transparent);
+        }
+
+        body::after {
+            bottom: 0;
+            background: linear-gradient(to top, rgba(5, 5, 16, 0.8), transparent);
+        }
+
+        #app-header {
+            position: fixed;
+            top: 24px;
+            z-index: 10;
+            text-align: center;
+            animation: fadeInDown 1s ease;
+        }
+
+        #app-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #ee5a24, #ff9a56, #ee5a24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        #app-header p {
+            font-size: 0.8rem;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1.5px;
+            margin-top: 4px;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         #globe-container {
@@ -43,14 +98,26 @@
         #dart {
             font-size: 64px;
             z-index: 10;
-            filter: drop-shadow(0 0 8px rgba(255, 100, 50, 0.6));
+            filter: drop-shadow(0 0 12px rgba(255, 100, 50, 0.6));
             cursor: pointer;
             transition: transform 0.2s;
             user-select: none;
+            animation: dartPulse 2s ease-in-out infinite, fadeInUp 1s ease 0.5s both;
         }
 
         #dart:hover:not(.thrown) {
             transform: scale(1.15);
+            animation: none;
+        }
+
+        @keyframes dartPulse {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 100, 50, 0.4)); }
+            50% { filter: drop-shadow(0 0 20px rgba(255, 100, 50, 0.8)) drop-shadow(0 0 40px rgba(238, 90, 36, 0.3)); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         #dart.thrown {
@@ -63,8 +130,9 @@
         #modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(6px);
+            background: rgba(5, 5, 16, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             z-index: 100;
             display: flex;
             align-items: center;
@@ -80,15 +148,19 @@
         }
 
         #modal {
-            background: linear-gradient(135deg, #1a1a3e 0%, #0f0f2a 100%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(26, 26, 62, 0.85) 0%, rgba(15, 15, 42, 0.9) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
             padding: 36px 40px;
             max-width: 480px;
             width: 90%;
-            transform: translateY(30px) scale(0.95);
-            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(238, 90, 36, 0.15);
+            transform: translateY(30px) scale(0.9);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6),
+                        0 0 60px rgba(238, 90, 36, 0.08),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
 
         #modal-overlay.visible #modal {
@@ -97,14 +169,17 @@
 
         #modal h2 {
             font-size: 1.8rem;
+            font-weight: 800;
             margin-bottom: 6px;
             color: #fff;
         }
 
         #modal .capital {
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.5);
             margin-bottom: 20px;
+            letter-spacing: 0.5px;
         }
 
         #modal .section-title {
@@ -231,6 +306,10 @@
     </style>
 </head>
 <body>
+    <div id="app-header">
+        <h1>DartAway</h1>
+        <p>Pick your next destination</p>
+    </div>
     <div id="modal-overlay">
         <div id="modal">
             <h2 id="modal-country"></h2>
@@ -265,33 +344,81 @@
         renderer.setPixelRatio(window.devicePixelRatio);
         container.appendChild(renderer.domElement);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x333333);
+        // Lighting — warm key + cool fill for depth
+        const ambientLight = new THREE.AmbientLight(0x222244, 0.6);
         scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(5, 3, 5);
-        scene.add(directionalLight);
+        const keyLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+        keyLight.position.set(5, 3, 5);
+        scene.add(keyLight);
 
-        // Starfield
+        const fillLight = new THREE.DirectionalLight(0x4466aa, 0.4);
+        fillLight.position.set(-5, -2, -3);
+        scene.add(fillLight);
+
+        // Starfield — more stars, varying sizes for depth
         const starGeometry = new THREE.BufferGeometry();
-        const starCount = 2000;
+        const starCount = 4000;
         const starPositions = new Float32Array(starCount * 3);
-        for (let i = 0; i < starCount * 3; i++) {
-            starPositions[i] = (Math.random() - 0.5) * 100;
+        const starSizes = new Float32Array(starCount);
+        for (let i = 0; i < starCount; i++) {
+            starPositions[i * 3] = (Math.random() - 0.5) * 120;
+            starPositions[i * 3 + 1] = (Math.random() - 0.5) * 120;
+            starPositions[i * 3 + 2] = (Math.random() - 0.5) * 120;
+            starSizes[i] = Math.random() * 0.15 + 0.03;
         }
         starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
+        starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+        const starMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.1,
+            transparent: true,
+            opacity: 0.85,
+            sizeAttenuation: true,
+        });
         scene.add(new THREE.Points(starGeometry, starMaterial));
 
-        // Globe
+        // Globe with bump + specular maps
+        const loader = new THREE.TextureLoader();
         const geometry = new THREE.SphereGeometry(1, 64, 64);
-        const texture = new THREE.TextureLoader().load(
-            'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'
-        );
-        const material = new THREE.MeshPhongMaterial({ map: texture });
+        const material = new THREE.MeshPhongMaterial({
+            map: loader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'),
+            bumpMap: loader.load('https://unpkg.com/three-globe/example/img/earth-topology.png'),
+            bumpScale: 0.015,
+            specularMap: loader.load('https://unpkg.com/three-globe/example/img/earth-water.png'),
+            specular: new THREE.Color(0x333333),
+            shininess: 15,
+        });
         const globe = new THREE.Mesh(geometry, material);
         scene.add(globe);
+
+        // Atmosphere glow (Fresnel rim shader)
+        const atmosphereVertexShader = `
+            varying vec3 vNormal;
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+        const atmosphereFragmentShader = `
+            varying vec3 vNormal;
+            void main() {
+                float intensity = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.5);
+                gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
+            }
+        `;
+        const atmosphereMaterial = new THREE.ShaderMaterial({
+            vertexShader: atmosphereVertexShader,
+            fragmentShader: atmosphereFragmentShader,
+            blending: THREE.AdditiveBlending,
+            side: THREE.BackSide,
+            transparent: true,
+        });
+        const atmosphere = new THREE.Mesh(
+            new THREE.SphereGeometry(1.15, 64, 64),
+            atmosphereMaterial
+        );
+        scene.add(atmosphere);
 
         // Country data: [name, lat, lng, capital, funFact, [activity1, activity2, activity3]]
         const countries = [
@@ -512,7 +639,8 @@
 
         function showCountryLabel(target) {
             currentCountryName = target.name;
-            document.getElementById('modal-country').textContent = target.name;
+            const flag = countryFlags[target.name] || '';
+            document.getElementById('modal-country').textContent = flag + ' ' + target.name;
             document.getElementById('modal-capital').textContent = 'Capital: ' + target.capital;
             document.getElementById('modal-fact').textContent = target.funFact;
             const list = document.getElementById('modal-activities');
@@ -531,6 +659,27 @@
         }
 
         let currentCountryName = '';
+
+        // Country name to flag emoji mapping
+        const countryFlags = {
+            "France": "\u{1F1EB}\u{1F1F7}", "Brazil": "\u{1F1E7}\u{1F1F7}", "Japan": "\u{1F1EF}\u{1F1F5}",
+            "Australia": "\u{1F1E6}\u{1F1FA}", "USA": "\u{1F1FA}\u{1F1F8}", "Canada": "\u{1F1E8}\u{1F1E6}",
+            "India": "\u{1F1EE}\u{1F1F3}", "China": "\u{1F1E8}\u{1F1F3}", "Russia": "\u{1F1F7}\u{1F1FA}",
+            "Mexico": "\u{1F1F2}\u{1F1FD}", "Argentina": "\u{1F1E6}\u{1F1F7}", "Egypt": "\u{1F1EA}\u{1F1EC}",
+            "South Africa": "\u{1F1FF}\u{1F1E6}", "Nigeria": "\u{1F1F3}\u{1F1EC}", "Kenya": "\u{1F1F0}\u{1F1EA}",
+            "UK": "\u{1F1EC}\u{1F1E7}", "Germany": "\u{1F1E9}\u{1F1EA}", "Italy": "\u{1F1EE}\u{1F1F9}",
+            "Spain": "\u{1F1EA}\u{1F1F8}", "Turkey": "\u{1F1F9}\u{1F1F7}", "Iran": "\u{1F1EE}\u{1F1F7}",
+            "Saudi Arabia": "\u{1F1F8}\u{1F1E6}", "Indonesia": "\u{1F1EE}\u{1F1E9}", "Thailand": "\u{1F1F9}\u{1F1ED}",
+            "Colombia": "\u{1F1E8}\u{1F1F4}", "Peru": "\u{1F1F5}\u{1F1EA}", "Chile": "\u{1F1E8}\u{1F1F1}",
+            "Morocco": "\u{1F1F2}\u{1F1E6}", "Algeria": "\u{1F1E9}\u{1F1FF}", "Norway": "\u{1F1F3}\u{1F1F4}",
+            "Sweden": "\u{1F1F8}\u{1F1EA}", "Finland": "\u{1F1EB}\u{1F1EE}", "Poland": "\u{1F1F5}\u{1F1F1}",
+            "Ukraine": "\u{1F1FA}\u{1F1E6}", "Greece": "\u{1F1EC}\u{1F1F7}", "Portugal": "\u{1F1F5}\u{1F1F9}",
+            "Mongolia": "\u{1F1F2}\u{1F1F3}", "Vietnam": "\u{1F1FB}\u{1F1F3}", "Philippines": "\u{1F1F5}\u{1F1ED}",
+            "New Zealand": "\u{1F1F3}\u{1F1FF}", "Iceland": "\u{1F1EE}\u{1F1F8}", "Cuba": "\u{1F1E8}\u{1F1FA}",
+            "Madagascar": "\u{1F1F2}\u{1F1EC}", "Ethiopia": "\u{1F1EA}\u{1F1F9}", "Tanzania": "\u{1F1F9}\u{1F1FF}",
+            "Pakistan": "\u{1F1F5}\u{1F1F0}", "Afghanistan": "\u{1F1E6}\u{1F1EB}", "Iraq": "\u{1F1EE}\u{1F1F6}",
+            "Venezuela": "\u{1F1FB}\u{1F1EA}", "Ecuador": "\u{1F1EA}\u{1F1E8}", "Bolivia": "\u{1F1E7}\u{1F1F4}",
+        };
 
         function closeModal() {
             document.getElementById('modal-overlay').classList.remove('visible');
