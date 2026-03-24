@@ -208,6 +208,49 @@
             requestAnimationFrame(animateDart);
         }
 
+        // Zoom camera to target country
+        let zooming = false;
+        let zoomStart = 0;
+        const ZOOM_DURATION = 2000;
+        let zoomStartPos = null;
+        let zoomEndPos = null;
+        let zoomStartLookAt = null;
+        let zoomEndLookAt = null;
+        let zoomTarget = null;
+
+        function startZoom(target) {
+            zooming = true;
+            zoomStart = performance.now();
+            zoomTarget = target;
+
+            zoomStartPos = camera.position.clone();
+            zoomStartLookAt = new THREE.Vector3(0, 0, 0);
+
+            // Compute a camera position close to the country, looking at the globe surface
+            const worldPos = target.localPos.clone().applyMatrix4(globe.matrixWorld);
+            const normal = worldPos.clone().sub(globe.position).normalize();
+            // Position camera 1.6 units from globe center along the normal (globe radius is 1)
+            zoomEndPos = globe.position.clone().add(normal.clone().multiplyScalar(1.6));
+            zoomEndLookAt = worldPos.clone();
+        }
+
+        function updateZoom(time) {
+            if (!zooming) return;
+            const elapsed = time - zoomStart;
+            const t = Math.min(elapsed / ZOOM_DURATION, 1);
+            // Smooth ease-in-out
+            const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+            camera.position.lerpVectors(zoomStartPos, zoomEndPos, ease);
+            const lookAt = new THREE.Vector3().lerpVectors(zoomStartLookAt, zoomEndLookAt, ease);
+            camera.lookAt(lookAt);
+
+            if (t >= 1) {
+                zooming = false;
+                showCountryLabel(zoomTarget);
+            }
+        }
+
         // Place a small red pin on the globe at the target
         function placePinOnGlobe(target) {
             const pinGeometry = new THREE.SphereGeometry(0.025, 16, 16);
@@ -216,17 +259,21 @@
             pin.position.copy(target.localPos.clone().multiplyScalar(1.02));
             globe.add(pin);
 
-            // Show country name
+            // Start zoom after placing pin
+            startZoom(target);
+        }
+
+        function showCountryLabel(target) {
+            const worldPos = target.localPos.clone().applyMatrix4(globe.matrixWorld);
             const label = document.createElement('div');
             label.textContent = target.name;
-            label.style.cssText = 'position:fixed;z-index:20;color:#fff;font-size:1.4rem;font-weight:700;' +
-                'background:rgba(238,90,36,0.85);padding:8px 20px;border-radius:24px;pointer-events:none;' +
+            label.style.cssText = 'position:fixed;z-index:20;color:#fff;font-size:1.8rem;font-weight:700;' +
+                'background:rgba(238,90,36,0.85);padding:10px 28px;border-radius:24px;pointer-events:none;' +
                 'opacity:0;transition:opacity 0.5s;text-align:center;';
             document.body.appendChild(label);
-            const screenPos = toScreenPosition(target.worldPos);
+            const screenPos = toScreenPosition(worldPos);
             label.style.left = (screenPos.x - label.offsetWidth / 2) + 'px';
             label.style.top = (screenPos.y - 60) + 'px';
-            // Re-center after measuring
             requestAnimationFrame(() => {
                 label.style.left = (screenPos.x - label.offsetWidth / 2) + 'px';
                 label.style.opacity = '1';
@@ -272,6 +319,7 @@
             }
 
             globe.rotation.y += rotationSpeed;
+            updateZoom(time);
             renderer.render(scene, camera);
         }
 
