@@ -155,27 +155,83 @@
             flex-shrink: 0;
         }
 
-        #modal-close {
+        #modal-buttons {
             margin-top: 24px;
-            width: 100%;
-            padding: 12px;
+            display: flex;
+            gap: 12px;
+        }
+
+        #modal-buttons button {
+            flex: 1;
+            padding: 12px 8px;
             border: none;
             border-radius: 12px;
-            background: #ee5a24;
             color: #fff;
-            font-size: 1rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        #modal-buttons button:active {
+            transform: scale(0.97);
+        }
+
+        #btn-retry {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+
+        #btn-retry:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        #btn-vacation {
+            background: #ee5a24;
+        }
+
+        #btn-vacation:hover {
+            background: #d84315;
+        }
+
+        /* Vacation message area */
+        #vacation-msg {
+            display: none;
+            margin-top: 16px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border-left: 3px solid #4ecdc4;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.9);
+            white-space: pre-wrap;
+        }
+
+        #vacation-msg.visible {
+            display: block;
+        }
+
+        #btn-copy {
+            margin-top: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: #4ecdc4;
+            color: #0a0a1a;
+            font-size: 0.8rem;
             font-weight: 700;
             cursor: pointer;
             transition: background 0.2s;
         }
 
-        #modal-close:hover {
-            background: #d84315;
+        #btn-copy:hover {
+            background: #3dbdb5;
         }
     </style>
 </head>
 <body>
-    <div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div id="modal-overlay">
         <div id="modal">
             <h2 id="modal-country"></h2>
             <div class="capital" id="modal-capital"></div>
@@ -183,7 +239,11 @@
             <div class="fun-fact" id="modal-fact"></div>
             <div class="section-title">Top activities</div>
             <ul class="activities" id="modal-activities"></ul>
-            <button id="modal-close" onclick="closeModal()">Got it!</button>
+            <div id="modal-buttons">
+                <button id="btn-retry" onclick="resetGlobe()">Relancer</button>
+                <button id="btn-vacation" onclick="generateVacationMsg()">Demander un conge</button>
+            </div>
+            <div id="vacation-msg"></div>
         </div>
     </div>
     <div id="globe-container"></div>
@@ -451,6 +511,7 @@
         }
 
         function showCountryLabel(target) {
+            currentCountryName = target.name;
             document.getElementById('modal-country').textContent = target.name;
             document.getElementById('modal-capital').textContent = 'Capital: ' + target.capital;
             document.getElementById('modal-fact').textContent = target.funFact;
@@ -461,13 +522,81 @@
                 li.textContent = activity;
                 list.appendChild(li);
             }
+            document.getElementById('vacation-msg').classList.remove('visible');
+            const existingCopy = document.getElementById('btn-copy');
+            if (existingCopy) existingCopy.remove();
             setTimeout(() => {
                 document.getElementById('modal-overlay').classList.add('visible');
             }, 400);
         }
 
+        let currentCountryName = '';
+
         function closeModal() {
             document.getElementById('modal-overlay').classList.remove('visible');
+            document.getElementById('vacation-msg').classList.remove('visible');
+        }
+
+        function resetGlobe() {
+            closeModal();
+            // Remove pin from globe
+            const toRemove = [];
+            globe.children.forEach(c => { if (c.isMesh) toRemove.push(c); });
+            toRemove.forEach(c => globe.remove(c));
+            // Reset dart
+            dartEl.classList.remove('thrown');
+            dartEl.style.cssText = '';
+            dartEl.style.opacity = '1';
+            dartEl.style.pointerEvents = 'auto';
+            // Reset camera
+            camera.position.set(0, 0, 3);
+            camera.lookAt(0, 0, 0);
+            // Reset state
+            rotationSpeed = BASE_SPEED;
+            decelerating = false;
+            globeStopped = false;
+            zooming = false;
+        }
+
+        const vacationMessages = [
+            (c) => `Salut boss ! Mon globe terrestre vient de choisir ${c} pour moi. C'est un signe du destin, non ? Je pose mes jours, j'ai deja mentalement fait mes valises.`,
+            (c) => `Hey ! Figure-toi qu'une flechette magique vient de m'envoyer a ${c}. Je suis legalement oblige d'y aller. C'est dans la convention de Geneve, je crois. Jours de conge, please ?`,
+            (c) => `Chef, j'ai une urgence : ${c} a besoin de moi. Perso je suis pas convaincu non plus, mais qui suis-je pour defier la flechette du destin ? Je reviens bronze et motive.`,
+            (c) => `BREAKING NEWS : La flechette a parle. Direction ${c}. Je pourrais ignorer l'appel de l'aventure, mais on sait tous les deux que ma productivite serait nulle. Autant poser des conges.`,
+            (c) => `Coucou ! Une intelligence artificielle couplée a un globe me dit d'aller a ${c}. Refuser serait impoli envers la technologie. Je peux prendre des jours de conge ?`,
+            (c) => `Urgent : mon karma exige un voyage a ${c}. Le refuser pourrait impacter negativement les KPIs de l'equipe. Je prends mes conges pour le bien de tous.`,
+            (c) => `Hello ! J'ai fait tourner le globe et la flechette a choisi ${c}. C'est plus fort que moi. On se revoit dans une semaine, recharged a 200% ?`,
+            (c) => `Boss, bonne nouvelle : j'ai trouve ma prochaine destination de team building solo. ${c} ! Je me sacrifie pour tester. Juste besoin de quelques jours de conge...`,
+        ];
+
+        function generateVacationMsg() {
+            const msgEl = document.getElementById('vacation-msg');
+            const randomMsg = vacationMessages[Math.floor(Math.random() * vacationMessages.length)];
+            const text = randomMsg(currentCountryName);
+
+            // Add copy button if not there yet
+            if (!document.getElementById('btn-copy')) {
+                const copyBtn = document.createElement('button');
+                copyBtn.id = 'btn-copy';
+                copyBtn.textContent = 'Copier le message';
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(text);
+                    copyBtn.textContent = 'Copie !';
+                    setTimeout(() => { copyBtn.textContent = 'Copier le message'; }, 1500);
+                };
+                msgEl.parentNode.insertBefore(copyBtn, msgEl.nextSibling);
+            }
+
+            msgEl.textContent = text;
+            msgEl.classList.add('visible');
+
+            // Update copy button handler with new text
+            const copyBtn = document.getElementById('btn-copy');
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(text);
+                copyBtn.textContent = 'Copie !';
+                setTimeout(() => { copyBtn.textContent = 'Copier le message'; }, 1500);
+            };
         }
 
         function launchDart() {
