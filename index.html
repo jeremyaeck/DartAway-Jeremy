@@ -98,11 +98,11 @@
         #dart {
             font-size: 64px;
             z-index: 10;
-            filter: drop-shadow(0 0 12px rgba(255, 100, 50, 0.6));
             cursor: pointer;
-            transition: transform 0.2s;
             user-select: none;
             animation: dartPulse 2s ease-in-out infinite, fadeInUp 1s ease 0.5s both;
+            transition: transform 0.2s;
+            filter: drop-shadow(0 0 12px rgba(255, 100, 50, 0.6));
         }
 
         #dart:hover:not(.thrown) {
@@ -383,7 +383,7 @@
     </div>
     <div id="globe-container"></div>
     <div id="controls">
-        <div id="dart">🏹</div>
+        <div id="dart">🎯</div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -599,39 +599,57 @@
             return visible[Math.floor(Math.random() * visible.length)];
         }
 
-        // Animate the dart throw
+        // Animate the dart throw with realistic parabola
         function throwDart(target) {
             const rect = dartEl.getBoundingClientRect();
-            const startX = rect.left;
-            const startY = rect.top;
+            const startX = rect.left + rect.width / 2;
+            const startY = rect.top + rect.height / 2;
             // Switch to fixed positioning for flight
             dartEl.classList.add('thrown');
-            dartEl.style.left = startX + 'px';
-            dartEl.style.top = startY + 'px';
-            dartEl.style.transform = 'rotate(-45deg)';
+            dartEl.style.left = (startX - rect.width / 2) + 'px';
+            dartEl.style.top = (startY - rect.height / 2) + 'px';
 
             const screenTarget = toScreenPosition(target.worldPos);
-            const endX = screenTarget.x - 24;
-            const endY = screenTarget.y - 24;
-            const duration = 600;
+            const endX = screenTarget.x;
+            const endY = screenTarget.y;
+
+            // Parabola parameters
+            const dx = endX - startX;
+            const dy = endY - startY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const arcHeight = Math.max(200, dist * 0.5); // Bigger arc for longer throws
+            const duration = 900;
             const start = performance.now();
 
             function animateDart(now) {
                 const t = Math.min((now - start) / duration, 1);
-                const ease = 1 - (1 - t) * (1 - t);
-                const x = startX + (endX - startX) * ease;
-                const y = startY + (endY - startY) * ease;
-                const arc = -150 * Math.sin(Math.PI * t);
-                dartEl.style.left = x + 'px';
-                dartEl.style.top = (y + arc) + 'px';
+                // Ease-out for deceleration feel at the end
+                const ease = 1 - Math.pow(1 - t, 2.5);
 
-                const angle = -45 + (t * 45);
+                // Linear interpolation + parabolic arc
+                const x = startX + dx * ease;
+                const baseY = startY + dy * ease;
+                // Parabola: peaks at t=0.4 (earlier peak feels more like a throw)
+                const arc = -arcHeight * Math.sin(Math.PI * Math.pow(t, 0.7));
+                const y = baseY + arc;
+
+                dartEl.style.left = (x - rect.width / 2) + 'px';
+                dartEl.style.top = (y - rect.height / 2) + 'px';
+
+                // Rotate dart to follow trajectory (tangent angle)
+                const nextT = Math.min(t + 0.02, 1);
+                const nextEase = 1 - Math.pow(1 - nextT, 2.5);
+                const nextX = startX + dx * nextEase;
+                const nextBaseY = startY + dy * nextEase;
+                const nextArc = -arcHeight * Math.sin(Math.PI * Math.pow(nextT, 0.7));
+                const nextY = nextBaseY + nextArc;
+                const angle = Math.atan2(nextY - y, nextX - x) * (180 / Math.PI);
                 dartEl.style.transform = `rotate(${angle}deg)`;
 
                 if (t < 1) {
                     requestAnimationFrame(animateDart);
                 } else {
-                    dartEl.style.transform = 'rotate(0deg) scale(1.2)';
+                    dartEl.style.transform = 'rotate(0deg) scale(1.3)';
                     placePinOnGlobe(target);
                 }
             }
