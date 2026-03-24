@@ -58,9 +58,134 @@
             pointer-events: none;
             cursor: default;
         }
+
+        /* Country info modal */
+        #modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        #modal-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #modal {
+            background: linear-gradient(135deg, #1a1a3e 0%, #0f0f2a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 36px 40px;
+            max-width: 480px;
+            width: 90%;
+            transform: translateY(30px) scale(0.95);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(238, 90, 36, 0.15);
+        }
+
+        #modal-overlay.visible #modal {
+            transform: translateY(0) scale(1);
+        }
+
+        #modal h2 {
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        #modal .capital {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 20px;
+        }
+
+        #modal .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #ee5a24;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        #modal .fun-fact {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border-left: 3px solid #ee5a24;
+        }
+
+        #modal .activities {
+            list-style: none;
+            padding: 0;
+        }
+
+        #modal .activities li {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.85);
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #modal .activities li:last-child {
+            border-bottom: none;
+        }
+
+        #modal .activities li::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #ee5a24;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        #modal-close {
+            margin-top: 24px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            background: #ee5a24;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #modal-close:hover {
+            background: #d84315;
+        }
     </style>
 </head>
 <body>
+    <div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div id="modal">
+            <h2 id="modal-country"></h2>
+            <div class="capital" id="modal-capital"></div>
+            <div class="section-title">Fun fact</div>
+            <div class="fun-fact" id="modal-fact"></div>
+            <div class="section-title">Top activities</div>
+            <ul class="activities" id="modal-activities"></ul>
+            <button id="modal-close" onclick="closeModal()">Got it!</button>
+        </div>
+    </div>
     <div id="globe-container"></div>
     <div id="controls">
         <div id="dart">🏹</div>
@@ -108,25 +233,59 @@
         const globe = new THREE.Mesh(geometry, material);
         scene.add(globe);
 
-        // Country coordinates [name, lat, lng]
+        // Country data: [name, lat, lng, capital, funFact, [activity1, activity2, activity3]]
         const countries = [
-            ["France", 46.6, 2.2], ["Brazil", -14.2, -51.9], ["Japan", 36.2, 138.3],
-            ["Australia", -25.3, 133.8], ["USA", 39.8, -98.6], ["Canada", 56.1, -106.3],
-            ["India", 20.6, 78.9], ["China", 35.9, 104.2], ["Russia", 61.5, 105.3],
-            ["Mexico", 23.6, -102.6], ["Argentina", -38.4, -63.6], ["Egypt", 26.8, 30.8],
-            ["South Africa", -30.6, 22.9], ["Nigeria", 9.1, 8.7], ["Kenya", -0.02, 37.9],
-            ["UK", 55.4, -3.4], ["Germany", 51.2, 10.4], ["Italy", 41.9, 12.6],
-            ["Spain", 40.5, -3.7], ["Turkey", 39.0, 35.2], ["Iran", 32.4, 53.7],
-            ["Saudi Arabia", 23.9, 45.1], ["Indonesia", -0.8, 113.9], ["Thailand", 15.9, 101.0],
-            ["Colombia", 4.6, -74.3], ["Peru", -9.2, -75.0], ["Chile", -35.7, -71.5],
-            ["Morocco", 31.8, -7.1], ["Algeria", 28.0, 1.7], ["Norway", 60.5, 8.5],
-            ["Sweden", 60.1, 18.6], ["Finland", 61.9, 25.7], ["Poland", 51.9, 19.1],
-            ["Ukraine", 48.4, 31.2], ["Greece", 39.1, 21.8], ["Portugal", 39.4, -8.2],
-            ["Mongolia", 46.9, 103.8], ["Vietnam", 14.1, 108.3], ["Philippines", 12.9, 121.8],
-            ["New Zealand", -40.9, 174.9], ["Iceland", 64.9, -19.0], ["Cuba", 21.5, -78.0],
-            ["Madagascar", -18.8, 46.9], ["Ethiopia", 9.1, 40.5], ["Tanzania", -6.4, 34.9],
-            ["Pakistan", 30.4, 69.3], ["Afghanistan", 33.9, 67.7], ["Iraq", 33.2, 43.7],
-            ["Venezuela", 6.4, -66.6], ["Ecuador", -1.8, -78.2], ["Bolivia", -16.3, -63.6],
+            ["France", 46.6, 2.2, "Paris", "France produces over 1,200 varieties of cheese.", ["Visit the Eiffel Tower", "Explore the Loire Valley castles", "Stroll the lavender fields of Provence"]],
+            ["Brazil", -14.2, -51.9, "Brasilia", "Brazil contains about 60% of the Amazon rainforest.", ["Carnival in Rio de Janeiro", "Hike to Iguazu Falls", "Relax on Copacabana Beach"]],
+            ["Japan", 36.2, 138.3, "Tokyo", "Japan has more than 6,800 islands.", ["Visit temples in Kyoto", "Climb Mount Fuji", "Explore Tokyo's street food scene"]],
+            ["Australia", -25.3, 133.8, "Canberra", "Australia is home to 21 of the world's 25 most venomous snakes.", ["Dive the Great Barrier Reef", "Hike in the Blue Mountains", "See the Sydney Opera House"]],
+            ["USA", 39.8, -98.6, "Washington D.C.", "The US has more public libraries than McDonald's restaurants.", ["Road trip through national parks", "Explore New York City", "Visit the Grand Canyon"]],
+            ["Canada", 56.1, -106.3, "Ottawa", "Canada has the longest coastline of any country in the world.", ["See Niagara Falls", "Explore Banff National Park", "Kayak in the Bay of Fundy"]],
+            ["India", 20.6, 78.9, "New Delhi", "India has the world's largest postal network.", ["Visit the Taj Mahal", "Explore the backwaters of Kerala", "Trek in the Himalayas"]],
+            ["China", 35.9, 104.2, "Beijing", "China's railway lines could loop around Earth twice.", ["Walk the Great Wall", "See the Terracotta Army", "Cruise the Li River"]],
+            ["Russia", 61.5, 105.3, "Moscow", "Russia spans 11 time zones.", ["Ride the Trans-Siberian Railway", "Visit the Hermitage Museum", "See Lake Baikal"]],
+            ["Mexico", 23.6, -102.6, "Mexico City", "Mexico introduced chocolate, chilies and corn to the world.", ["Explore Chichen Itza", "Swim in cenotes of Yucatan", "Taste street tacos in Oaxaca"]],
+            ["Argentina", -38.4, -63.6, "Buenos Aires", "Argentina is named after the Latin word for silver.", ["See Perito Moreno Glacier", "Tango in Buenos Aires", "Hike in Patagonia"]],
+            ["Egypt", 26.8, 30.8, "Cairo", "The Great Pyramid was the tallest structure for over 3,800 years.", ["Visit the Pyramids of Giza", "Cruise the Nile River", "Dive in the Red Sea"]],
+            ["South Africa", -30.6, 22.9, "Pretoria", "South Africa has three capital cities.", ["Safari in Kruger National Park", "Visit Table Mountain", "Explore the Garden Route"]],
+            ["Nigeria", 9.1, 8.7, "Abuja", "Nigeria is Africa's most populous country.", ["Explore Yankari National Park", "Visit Olumo Rock", "Discover Lagos art scene"]],
+            ["Kenya", -0.02, 37.9, "Nairobi", "Kenya is named after Mount Kenya, Africa's second-highest peak.", ["Safari in Maasai Mara", "Visit Lake Nakuru", "Relax on Diani Beach"]],
+            ["UK", 55.4, -3.4, "London", "The London Underground opened in 1863, the world's first.", ["See Big Ben and Parliament", "Explore the Scottish Highlands", "Visit Stonehenge"]],
+            ["Germany", 51.2, 10.4, "Berlin", "Germany has over 1,500 different beers.", ["Visit Neuschwanstein Castle", "Explore the Black Forest", "Tour Berlin's history"]],
+            ["Italy", 41.9, 12.6, "Rome", "Italy has more UNESCO World Heritage Sites than any other country.", ["Tour the Colosseum", "Gondola ride in Venice", "Hike the Cinque Terre"]],
+            ["Spain", 40.5, -3.7, "Madrid", "Spain's La Tomatina festival uses 150,000 tomatoes each year.", ["Visit the Alhambra", "Walk the Camino de Santiago", "Explore Barcelona's architecture"]],
+            ["Turkey", 39.0, 35.2, "Ankara", "Istanbul is the only city in the world spanning two continents.", ["Fly over Cappadocia in a balloon", "Visit Hagia Sophia", "Bathe in Pamukkale terraces"]],
+            ["Iran", 32.4, 53.7, "Tehran", "Iran is home to one of the world's oldest civilizations.", ["Explore Persepolis ruins", "Visit Isfahan's mosques", "Hike Mount Damavand"]],
+            ["Saudi Arabia", 23.9, 45.1, "Riyadh", "Saudi Arabia is the largest country with no rivers.", ["Visit Al-Ula rock formations", "Explore Jeddah's old town", "Dive in the Red Sea coral reefs"]],
+            ["Indonesia", -0.8, 113.9, "Jakarta", "Indonesia is made up of over 17,000 islands.", ["Surf in Bali", "Hike Mount Bromo", "See Komodo dragons"]],
+            ["Thailand", 15.9, 101.0, "Bangkok", "Thailand is the only Southeast Asian country never colonized.", ["Visit the Grand Palace", "Island-hop in Krabi", "Explore Chiang Mai temples"]],
+            ["Colombia", 4.6, -74.3, "Bogota", "Colombia is the second most biodiverse country on Earth.", ["Explore Cartagena's old city", "Hike to the Lost City", "Visit Cocora Valley"]],
+            ["Peru", -9.2, -75.0, "Lima", "Peru has 4,000 varieties of native potatoes.", ["Trek to Machu Picchu", "Fly over the Nazca Lines", "Explore the Amazon from Iquitos"]],
+            ["Chile", -35.7, -71.5, "Santiago", "Chile is the world's longest north-to-south country.", ["Stargaze in the Atacama Desert", "Hike in Torres del Paine", "Explore Valparaiso's street art"]],
+            ["Morocco", 31.8, -7.1, "Rabat", "Morocco's Fes medina is the world's largest car-free urban area.", ["Get lost in Marrakech's souks", "Camp in the Sahara Desert", "Surf in Essaouira"]],
+            ["Algeria", 28.0, 1.7, "Algiers", "Algeria is the largest country in Africa.", ["Explore the Casbah of Algiers", "Visit Tassili n'Ajjer rock art", "Discover Roman ruins at Timgad"]],
+            ["Norway", 60.5, 8.5, "Oslo", "Norway has the longest road tunnel in the world at 24.5 km.", ["Cruise the fjords", "See the Northern Lights", "Hike to Trolltunga"]],
+            ["Sweden", 60.1, 18.6, "Stockholm", "Sweden's Icehotel is rebuilt from scratch every winter.", ["Explore Stockholm's old town", "Stay at the Icehotel", "Hike the Kungsleden trail"]],
+            ["Finland", 61.9, 25.7, "Helsinki", "Finland has over 3 million saunas for 5.5 million people.", ["Chase the Northern Lights", "Visit Santa Claus Village", "Experience a Finnish sauna"]],
+            ["Poland", 51.9, 19.1, "Warsaw", "Poland is home to 17 UNESCO World Heritage Sites.", ["Explore Krakow's old town", "Visit the Wieliczka Salt Mine", "Hike in the Tatra Mountains"]],
+            ["Ukraine", 48.4, 31.2, "Kyiv", "Ukraine's Arsenalna metro station is the deepest in the world.", ["Visit Saint Sophia Cathedral", "Explore Lviv's coffee culture", "See the Carpathian Mountains"]],
+            ["Greece", 39.1, 21.8, "Athens", "Greece has more archaeological museums than any other country.", ["Visit the Acropolis", "Sail the Greek islands", "Watch a sunset in Santorini"]],
+            ["Portugal", 39.4, -8.2, "Lisbon", "Portugal is the oldest country in Europe with the same borders since 1139.", ["Ride Lisbon's vintage trams", "Explore the Algarve coast", "Visit Sintra's fairy-tale palaces"]],
+            ["Mongolia", 46.9, 103.8, "Ulaanbaatar", "Mongolia is the most sparsely populated country in the world.", ["Stay in a traditional ger camp", "Ride horses across the steppe", "Visit the Gobi Desert"]],
+            ["Vietnam", 14.1, 108.3, "Hanoi", "Vietnam is the world's largest exporter of cashew nuts.", ["Cruise Ha Long Bay", "Explore Hoi An's lantern streets", "Ride a motorbike through Ha Giang"]],
+            ["Philippines", 12.9, 121.8, "Manila", "The Philippines has over 7,600 islands.", ["Island-hop in Palawan", "Swim with whale sharks in Oslob", "Explore the Chocolate Hills"]],
+            ["New Zealand", -40.9, 174.9, "Wellington", "New Zealand was the first country to give women the right to vote.", ["Bungee jump in Queenstown", "Hike the Tongariro Crossing", "Explore Milford Sound"]],
+            ["Iceland", 64.9, -19.0, "Reykjavik", "Iceland has no mosquitoes.", ["Bathe in the Blue Lagoon", "Walk between tectonic plates", "Chase waterfalls on the Ring Road"]],
+            ["Cuba", 21.5, -78.0, "Havana", "Cuba has one of the highest literacy rates in the world.", ["Cruise Havana in a vintage car", "Relax on Varadero Beach", "Hike in Vinales Valley"]],
+            ["Madagascar", -18.8, 46.9, "Antananarivo", "About 90% of Madagascar's wildlife is found nowhere else.", ["See the Avenue of the Baobabs", "Spot lemurs in Andasibe", "Snorkel on Nosy Be"]],
+            ["Ethiopia", 9.1, 40.5, "Addis Ababa", "Ethiopia follows a calendar that is 7 years behind the rest of the world.", ["Visit the rock churches of Lalibela", "Trek the Simien Mountains", "Discover the Danakil Depression"]],
+            ["Tanzania", -6.4, 34.9, "Dodoma", "Tanzania is home to Africa's highest point, Mount Kilimanjaro.", ["Climb Mount Kilimanjaro", "Safari in the Serengeti", "Relax on Zanzibar beaches"]],
+            ["Pakistan", 30.4, 69.3, "Islamabad", "Pakistan has more glaciers than almost any non-polar country.", ["Explore the Hunza Valley", "Visit Badshahi Mosque", "Trek to K2 base camp"]],
+            ["Afghanistan", 33.9, 67.7, "Kabul", "Afghanistan is home to the stunning Band-e-Amir lakes.", ["See the Band-e-Amir lakes", "Explore the Bamiyan Valley", "Visit the Blue Mosque in Mazar-i-Sharif"]],
+            ["Iraq", 33.2, 43.7, "Baghdad", "Iraq is home to the ancient city of Babylon.", ["Visit the ruins of Babylon", "Explore the marshlands of southern Iraq", "See the citadel of Erbil"]],
+            ["Venezuela", 6.4, -66.6, "Caracas", "Venezuela has the world's highest uninterrupted waterfall, Angel Falls.", ["See Angel Falls", "Explore Canaima National Park", "Relax on Los Roques archipelago"]],
+            ["Ecuador", -1.8, -78.2, "Quito", "Ecuador is named after the equator which runs through it.", ["Visit the Galapagos Islands", "Explore Quito's colonial center", "Swing at the end of the world in Banos"]],
+            ["Bolivia", -16.3, -63.6, "Sucre", "Bolivia has the world's largest salt flat, Salar de Uyuni.", ["Walk on Salar de Uyuni", "Explore La Paz's Witches Market", "Mountain bike the Death Road"]],
         ];
 
         // Dart start position (captured when thrown)
@@ -156,13 +315,13 @@
         function pickVisibleCountry() {
             const cameraDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
             const visible = [];
-            for (const [name, lat, lng] of countries) {
+            for (const [name, lat, lng, capital, funFact, activities] of countries) {
                 const localPos = latLngToVector3(lat, lng);
                 const worldPos = localPos.clone().applyMatrix4(globe.matrixWorld);
                 const dirToCamera = new THREE.Vector3().subVectors(camera.position, worldPos).normalize();
                 const normal = worldPos.clone().sub(globe.position).normalize();
                 if (normal.dot(dirToCamera) > 0.15) {
-                    visible.push({ name, lat, lng, localPos, worldPos });
+                    visible.push({ name, lat, lng, capital, funFact, activities, localPos, worldPos });
                 }
             }
             if (visible.length === 0) return null;
@@ -264,20 +423,23 @@
         }
 
         function showCountryLabel(target) {
-            const worldPos = target.localPos.clone().applyMatrix4(globe.matrixWorld);
-            const label = document.createElement('div');
-            label.textContent = target.name;
-            label.style.cssText = 'position:fixed;z-index:20;color:#fff;font-size:1.8rem;font-weight:700;' +
-                'background:rgba(238,90,36,0.85);padding:10px 28px;border-radius:24px;pointer-events:none;' +
-                'opacity:0;transition:opacity 0.5s;text-align:center;';
-            document.body.appendChild(label);
-            const screenPos = toScreenPosition(worldPos);
-            label.style.left = (screenPos.x - label.offsetWidth / 2) + 'px';
-            label.style.top = (screenPos.y - 60) + 'px';
-            requestAnimationFrame(() => {
-                label.style.left = (screenPos.x - label.offsetWidth / 2) + 'px';
-                label.style.opacity = '1';
-            });
+            document.getElementById('modal-country').textContent = target.name;
+            document.getElementById('modal-capital').textContent = 'Capital: ' + target.capital;
+            document.getElementById('modal-fact').textContent = target.funFact;
+            const list = document.getElementById('modal-activities');
+            list.innerHTML = '';
+            for (const activity of target.activities) {
+                const li = document.createElement('li');
+                li.textContent = activity;
+                list.appendChild(li);
+            }
+            setTimeout(() => {
+                document.getElementById('modal-overlay').classList.add('visible');
+            }, 400);
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('visible');
         }
 
         // Rotation state
