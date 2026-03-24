@@ -311,16 +311,44 @@
             };
         }
 
+        // Count visible countries at a given globe Y rotation
+        function countVisibleCountries(rotationY) {
+            let count = 0;
+            const tempMatrix = new THREE.Matrix4().makeRotationY(rotationY);
+            for (const [name, lat, lng] of countries) {
+                const localPos = latLngToVector3(lat, lng);
+                const worldPos = localPos.clone().applyMatrix4(tempMatrix);
+                const dirToCamera = new THREE.Vector3().subVectors(camera.position, worldPos).normalize();
+                const normal = worldPos.clone().normalize();
+                if (normal.dot(dirToCamera) > 0) count++;
+            }
+            return count;
+        }
+
+        // Minimum visible countries to consider the face "land-rich" (not 90%+ ocean)
+        const MIN_VISIBLE_COUNTRIES = 5;
+
+        // Find the nearest good rotation if current face is too oceanic
+        function findLandRichRotation(currentRotY) {
+            if (countVisibleCountries(currentRotY) >= MIN_VISIBLE_COUNTRIES) return currentRotY;
+            // Search in small increments in both directions
+            for (let offset = 0.05; offset < Math.PI; offset += 0.05) {
+                if (countVisibleCountries(currentRotY + offset) >= MIN_VISIBLE_COUNTRIES) return currentRotY + offset;
+                if (countVisibleCountries(currentRotY - offset) >= MIN_VISIBLE_COUNTRIES) return currentRotY - offset;
+            }
+            return currentRotY;
+        }
+
         // Pick a random country visible on the front face of the globe
         function pickVisibleCountry() {
-            const cameraDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
             const visible = [];
             for (const [name, lat, lng, capital, funFact, activities] of countries) {
                 const localPos = latLngToVector3(lat, lng);
                 const worldPos = localPos.clone().applyMatrix4(globe.matrixWorld);
                 const dirToCamera = new THREE.Vector3().subVectors(camera.position, worldPos).normalize();
                 const normal = worldPos.clone().sub(globe.position).normalize();
-                if (normal.dot(dirToCamera) > 0.15) {
+                // Accept any country on the visible hemisphere (dot > 0)
+                if (normal.dot(dirToCamera) > 0) {
                     visible.push({ name, lat, lng, capital, funFact, activities, localPos, worldPos });
                 }
             }
@@ -442,6 +470,11 @@
             document.getElementById('modal-overlay').classList.remove('visible');
         }
 
+        function launchDart() {
+            const target = pickVisibleCountry();
+            if (target) throwDart(target);
+        }
+
         // Rotation state
         const BASE_SPEED = 0.045;
         let rotationSpeed = BASE_SPEED;
@@ -472,10 +505,28 @@
                     decelerating = false;
                     if (!globeStopped) {
                         globeStopped = true;
-                        setTimeout(() => {
-                            const target = pickVisibleCountry();
-                            if (target) throwDart(target);
-                        }, 300);
+                        // Adjust rotation if the visible face is mostly ocean
+                        const goodRotation = findLandRichRotation(globe.rotation.y);
+                        if (goodRotation !== globe.rotation.y) {
+                            // Smoothly nudge to the nearest land-rich face
+                            const targetRot = goodRotation;
+                            const nudgeStart = performance.now();
+                            const nudgeDuration = 800;
+                            const startRot = globe.rotation.y;
+                            function nudge(now) {
+                                const nt = Math.min((now - nudgeStart) / nudgeDuration, 1);
+                                const ease = nt < 0.5 ? 2 * nt * nt : 1 - Math.pow(-2 * nt + 2, 2) / 2;
+                                globe.rotation.y = startRot + (targetRot - startRot) * ease;
+                                if (nt < 1) {
+                                    requestAnimationFrame(nudge);
+                                } else {
+                                    launchDart();
+                                }
+                            }
+                            requestAnimationFrame(nudge);
+                        } else {
+                            setTimeout(launchDart, 300);
+                        }
                     }
                 }
             }
